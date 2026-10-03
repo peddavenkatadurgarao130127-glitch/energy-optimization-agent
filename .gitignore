@@ -1,7 +1,0 @@
-.venv/
-__pycache__/
-*.pyc
-models/*.joblib
-models/*.json
-data/raw/*.csv
-data/raw/*.zip
