@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="description" content="Energy Optimization Agent — analyze household energy use, rank savings actions, and monitor bills.">
+  <meta name="theme-color" content="#E7ECEF">
+  <title>Energy Optimization Agent</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@100..125,500..900&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <p class="eyebrow">SDG 13 · Climate action</p>
+    <h1>Energy Optimization Agent</h1>
+    <p class="lede">List what runs in your home. The agent measures the load, finds the waste, ranks each fix by payback and builds a plan that meets your reduction goal. Log your bills to see whether the plan is working.</p>
+  </header>
+
+  <section aria-label="The agent's loop">
+    <ol class="loop" id="loop"></ol>
+  </section>
+
+  <div class="grid">
+    <section class="panel" id="observe">
+      <p class="eyebrow">Observe</p>
+      <h2>What runs in your home</h2>
+
+      <div class="settings">
+        <div class="fld"><label class="mini" for="f-tariff">Avg tariff (₹/kWh)</label><input id="f-tariff" type="number" min="0" step="0.1" inputmode="decimal"></div>
+        <div class="fld"><label class="mini" for="f-ef">Grid (kg CO₂/kWh)</label><input id="f-ef" type="number" min="0" step="0.01" inputmode="decimal"></div>
+        <div class="fld"><label class="mini" for="f-setpoint">AC thermostat (°C)</label><input id="f-setpoint" type="number" min="16" max="30" step="1" inputmode="numeric"></div>
+        <div class="fld"><label class="mini" for="f-bill">Latest bill (kWh)</label><input id="f-bill" type="number" min="0" step="1" inputmode="numeric"></div>
+        <div class="fld"><label class="mini" for="f-target">Reduction goal (%)</label><input id="f-target" type="number" min="0" max="90" step="1" inputmode="numeric"></div>
+      </div>
+      <p class="hint">Tariff and grid factor are editable starting values. Use the average rate printed on your bill, including taxes. Leave the bill at 0 to skip the bill check.</p>
+
+      <div class="subhead">
+        <h3>Appliances</h3>
+        <span class="tag" id="sample-tag">Sample home</span>
+        <span class="spacer"></span>
+        <button class="btn ghost sm" id="load-sample" type="button">Load sample</button>
+        <button class="btn ghost sm" id="clear-all" type="button">Clear all</button>
+      </div>
+      <div id="rows"></div>
+      <div class="addbar">
+        <label class="vh" for="add-kind">Appliance type to add</label>
+        <select id="add-kind"></select>
+        <button class="btn" id="add" type="button">Add appliance</button>
+      </div>
+      <p class="hint">For a refrigerator, enter the compressor run time (about 8 hours a day) as hours. Wattage is on the appliance label.</p>
+      <div class="backend-box"><button class="btn ghost sm" id="api-analyze" type="button">Run backend analysis</button><span id="api-status" class="api-status" aria-live="polite"></span></div>
+    </section>
+
+    <section class="panel" id="analyze">
+      <p class="eyebrow">Analyze</p>
+      <h2>Where the energy goes</h2>
+      <div class="meter-wrap">
+        <div class="meter" id="meter" role="img" aria-label="0 kilowatt hours per month"></div>
+        <p class="meter-cap">kWh per month, estimated from the appliances listed. The amber digit is tenths.</p>
+      </div>
+      <dl class="stats">
+        <div><dt class="mini">Cost</dt><dd id="st-cost">₹0</dd><small>per month</small></div>
+        <div><dt class="mini">CO₂</dt><dd id="st-co2">0</dd><small>kg per month</small></div>
+        <div><dt class="mini">Daily use</dt><dd id="st-day">0</dd><small>kWh per day</small></div>
+      </dl>
+      <ul class="bars" id="bars"></ul>
+      <div class="notes">
+        <h3>What the agent noticed</h3>
+        <ul id="notes"></ul>
+      </div>
+    </section>
+  </div>
+
+  <section class="block" id="recommend">
+    <p class="eyebrow">Recommend · Plan</p>
+    <h2>What to change, best payback first</h2>
+    <div class="plan" id="plan"></div>
+    <ul class="recs" id="recs"></ul>
+    <p class="foot">Savings are estimates from typical efficiency gains and the figures you entered. Overlapping actions on one appliance are applied one after another, so they do not double count. Upfront costs are rough market prices in rupees.</p>
+  </section>
+
+  <section class="block" id="monitor">
+    <p class="eyebrow">Monitor</p>
+    <h2>Is the plan working?</h2>
+    <div class="mon">
+      <div>
+        <div id="chart"></div>
+        <div class="legend">
+          <span><i class="log"></i>Your bills</span>
+          <span><i class="base"></i>Model of current habits</span>
+          <span><i class="plan"></i>Level if the plan is followed</span>
+        </div>
+        <p class="mon-sum" id="mon-sum"></p>
+      </div>
+      <div>
+        <form class="logform" id="log-form" novalidate>
+          <div class="fld"><label class="mini" for="log-month">Bill month</label><input id="log-month" type="month"></div>
+          <div class="fld"><label class="mini" for="log-kwh">Units (kWh)</label><input id="log-kwh" type="number" min="0" step="1" inputmode="numeric"></div>
+          <button class="btn" type="submit">Log bill</button>
+        </form>
+        <p class="logmsg" id="log-msg" aria-live="polite"></p>
+        <div class="exnote" id="exnote" hidden>
+          <span>These readings are examples. Your first real entry replaces them.</span>
+          <button class="btn ghost sm" id="clear-ex" type="button">Remove examples</button>
+        </div>
+        <ul class="loglist" id="log-list"></ul>
+      </div>
+    </div>
+  </section>
+
+  <p class="credit">The agent is a rule-based planner that runs in your browser. Nothing you enter is uploaded; it stays on this device. Tree equivalence assumes about 21 kg of CO₂ absorbed per tree per year.</p>
+</div>
+<script src="/app.js"></script>
+</body>
+</html>
